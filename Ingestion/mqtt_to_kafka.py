@@ -4,6 +4,11 @@ Why this worked ?
 Kafka kept failing, due to broken kafka and python environemnt 
 conflict I usedd alokafka, which fixed those things
 
+
+What is happening here ? 
+
+The script listens for MQTT messages 
+Transfers from aiokafka(a high speed data transfering platform)
 '''
 import asyncio
 from aiokafka import AIOKafkaProducer
