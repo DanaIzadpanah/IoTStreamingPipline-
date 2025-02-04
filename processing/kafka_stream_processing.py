@@ -1,24 +1,39 @@
-'''
-What is the purpose of this script?
+import asyncio
+from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 
-Reads incoming sensor data from kafka
-filters out high tempreture data
-Sends alerts if dangersous conditions are detected
-'''
+# Kafka settings
+KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
+INPUT_TOPIC = "iot-sensor-data"
+OUTPUT_TOPIC = "iot-alerts"
 
+async def process_messages():
+    consumer = AIOKafkaConsumer(
+        INPUT_TOPIC,
+        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+        auto_offset_reset="earliest"
+    )
+    
+    producer = AIOKafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
 
-from pyflink.datastream import StreamExecutionEnvironment
+    # Start consumer and producer
+    await consumer.start()
+    await producer.start()
 
+    try:
+        async for msg in consumer:
+            message = msg.value.decode("utf-8")
+            print(f"Received: {message}")
 
-# Create a streaming execution environment
-env = StreamExecutionEnvironment.get_execution_environment()
+            # Extract temperature and filter high temperatures
+            temp_data = eval(message)  # Convert JSON string to dictionary
+            if temp_data["temperature"] > 35:
+                alert_msg = f"🔥 ALERT: High Temperature Detected! {temp_data}"
+                await producer.send_and_wait(OUTPUT_TOPIC, alert_msg.encode("utf-8"))
+                print(f"Sent Alert: {alert_msg}")
 
-# Ingest data from a Kafka source (assumes a topic named "iot-sensor-data")
-# Filter out sensor readings where the temperature exceeds 35 degrees
-# Send the filtered anomaly readings to a different Kafka topic ("iot-alerts")
-env.add_source(KafkaSource("iot-sensor-data")) \
-   .filter(lambda x: x["temperature"] > 35) \
-   .sink_to(KafkaSink("iot-alerts"))
-   
-# Execute the streaming pipeline with a job name
-env.execute("IoT Anomaly Detection")
+    finally:
+        await consumer.stop()
+        await producer.stop()
+
+if __name__ == "__main__":
+    asyncio.run(process_messages())
