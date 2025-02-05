@@ -1,7 +1,7 @@
 import asyncio
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 
-# Kafka settings
+# Kafka settingss
 KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
 INPUT_TOPIC = "iot-sensor-data"
 OUTPUT_TOPIC = "iot-alerts"
